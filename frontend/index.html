@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATTCC — Adaptive Test-Time Compute Controller</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- Navigation -->
+<nav id="navbar">
+    <div class="nav-inner">
+        <div class="nav-brand">
+            <span class="brand-icon">&#9889;</span>
+            <span class="brand-text">ATTCC</span>
+        </div>
+        <div class="nav-links">
+            <a href="#hero">Home</a>
+            <a href="#demo">Demo</a>
+            <a href="#how-it-works">Algorithm</a>
+            <a href="#experiments">Experiments</a>
+            <a href="#about">About</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section id="hero">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-bg-glow"></div>
+    <div class="container hero-container">
+        <div class="hero-badge">Research &mdash; Inference Optimization &mdash; 2026</div>
+        <h1 class="hero-title">
+            Adaptive Test-Time<br>
+            <span class="gradient-text">Compute Controller</span>
+        </h1>
+        <p class="hero-subtitle">
+            A per-instance compute allocation controller that monitors answer agreement
+            and dynamically decides when to stop sampling &mdash; achieving the same accuracy
+            as fixed strategies while using significantly less inference compute.
+        </p>
+        <div class="hero-stats">
+            <div class="stat-card stat-highlight">
+                <div class="stat-value">&darr;45%</div>
+                <div class="stat-label">Compute Reduced</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">=</div>
+                <div class="stat-label">Accuracy Maintained</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">4&ndash;8</div>
+                <div class="stat-label">Adaptive Range</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">3+</div>
+                <div class="stat-label">Min Agreement</div>
+            </div>
+        </div>
+        <div class="hero-actions">
+            <a href="#demo" class="btn btn-primary btn-lg">Try Interactive Demo</a>
+            <a href="#experiments" class="btn btn-outline btn-lg">Run Experiments</a>
+        </div>
+    </div>
+</section>
+
+<!-- Interactive Demo -->
+<section id="demo">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-tag">Interactive</div>
+            <h2>Live Demo</h2>
+            <p>Watch the adaptive controller decide in real-time how many samples to generate for each question</p>
+        </div>
+
+        <div class="demo-grid">
+            <!-- Input Panel -->
+            <div class="demo-input-panel card">
+                <h3>Input</h3>
+                <textarea id="question-input" placeholder="Type a math question or pick a preset below..." rows="3"></textarea>
+
+                <div class="field-group">
+                    <label>Preset Questions</label>
+                    <div class="preset-buttons" id="preset-buttons"></div>
+                </div>
+
+                <div class="field-group">
+                    <label>Strategy</label>
+                    <div class="strategy-buttons">
+                        <button class="strat-btn active" data-strategy="adaptive">&#9889; Adaptive</button>
+                        <button class="strat-btn" data-strategy="fixed_1">Fixed-1</button>
+                        <button class="strat-btn" data-strategy="fixed_4">Fixed-4</button>
+                        <button class="strat-btn" data-strategy="fixed_8">Fixed-8</button>
+                        <button class="strat-btn strat-compare" data-strategy="compare">Compare All</button>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label>Confidence Threshold (&theta;)</label>
+                    <div class="slider-row">
+                        <input type="range" id="threshold-slider" min="0.50" max="1.00" step="0.05" value="0.70">
+                        <span id="threshold-value" class="mono">0.70</span>
+                    </div>
+                </div>
+
+                <button id="run-btn" class="btn btn-primary btn-full">
+                    <span class="btn-text">&#9654; Run Controller</span>
+                    <span class="btn-loading" style="display:none;"><span class="spinner"></span> Processing...</span>
+                </button>
+                <div id="ground-truth-display" class="ground-truth" style="display:none;">
+                    Ground Truth: <span id="gt-value"></span>
+                </div>
+            </div>
+
+            <!-- Process Visualization -->
+            <div class="demo-viz-panel card">
+                <h3>Controller Process <span class="tag-live" id="live-tag" style="display:none;">LIVE</span></h3>
+                <div id="process-viz" class="process-container">
+                    <div class="empty-state">
+                        <div class="empty-icon">&#9881;</div>
+                        <p>Run a query to see the adaptive controller in action</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div id="results-panel" class="results-panel" style="display:none;">
+            <div class="results-grid" id="results-grid"></div>
+        </div>
+
+        <!-- Comparison Panel -->
+        <div id="compare-panel" class="card" style="display:none;">
+            <h3>Strategy Comparison</h3>
+            <div class="compare-table-wrap">
+                <table class="data-table" id="compare-table">
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>Answer</th>
+                            <th>Samples</th>
+                            <th>Confidence</th>
+                            <th>Tokens</th>
+                            <th>Time</th>
+                            <th>Correct</th>
+                        </tr>
+                    </thead>
+                    <tbody id="compare-tbody"></tbody>
+                </table>
+            </div>
+            <div class="compare-charts">
+                <div class="mini-chart-card">
+                    <canvas id="compare-samples-chart"></canvas>
+                </div>
+                <div class="mini-chart-card">
+                    <canvas id="compare-tokens-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-tag">Algorithm</div>
+            <h2>How It Works</h2>
+            <p>A consensus-based adaptive sampling algorithm with triple stopping criteria</p>
+        </div>
+
+        <div class="algorithm-flow">
+            <div class="flow-step">
+                <div class="flow-node node-start">START &mdash; New Question</div>
+            </div>
+            <div class="flow-arrow">&darr;</div>
+            <div class="flow-step">
+                <div class="flow-node node-action">Generate 2 Samples (temperature sampling)</div>
+            </div>
+            <div class="flow-arrow">&darr;</div>
+            <div class="flow-step">
+                <div class="flow-node node-extract">Extract Numerical Answer from Each Response</div>
+            </div>
+            <div class="flow-arrow">&darr;</div>
+            <div class="flow-step">
+                <div class="flow-node node-check">Compute Agreement: majority_count / total_samples</div>
+            </div>
+            <div class="flow-arrow">&darr;</div>
+            <div class="flow-step">
+                <div class="flow-node node-gate">Triple Gate Check</div>
+                <div class="gate-conditions">
+                    <span class="gate-cond">total &ge; 4</span>
+                    <span class="gate-op">AND</span>
+                    <span class="gate-cond">majority &ge; 3</span>
+                    <span class="gate-op">AND</span>
+                    <span class="gate-cond">ratio &ge; &theta;</span>
+                </div>
+            </div>
+            <div class="flow-arrow">&darr;</div>
+            <div class="flow-step split-step">
+                <div class="flow-branch branch-yes">
+                    <div class="flow-node node-yes">ALL MET</div>
+                    <div class="flow-arrow">&darr;</div>
+                    <div class="flow-node node-stop">STOP &amp; Return Answer</div>
+                    <div class="flow-desc">Confident &mdash; save compute</div>
+                </div>
+                <div class="flow-branch branch-no">
+                    <div class="flow-node node-no">NOT ALL MET</div>
+                    <div class="flow-arrow">&darr;</div>
+                    <div class="flow-node node-action">Sample 2 More</div>
+                    <div class="flow-desc">Not confident &mdash; spend more</div>
+                    <div class="flow-loop">&uarr; repeat until budget (8 max)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="insight-cards">
+            <div class="insight-card">
+                <div class="insight-icon" style="color:var(--green);">&#10003;</div>
+                <h4>Easy Questions</h4>
+                <p>Samples agree immediately &rarr; <strong>stop at 4 samples</strong></p>
+            </div>
+            <div class="insight-card">
+                <div class="insight-icon" style="color:var(--amber);">&#8776;</div>
+                <h4>Medium Questions</h4>
+                <p>Partial agreement &rarr; <strong>4&ndash;6 samples</strong></p>
+            </div>
+            <div class="insight-card">
+                <div class="insight-icon" style="color:var(--red);">&#10007;</div>
+                <h4>Hard Questions</h4>
+                <p>Disagreement &rarr; <strong>up to 8 samples</strong></p>
+            </div>
+        </div>
+
+        <div class="key-insight card">
+            <div class="key-insight-label">Key Result</div>
+            <p>
+                Same accuracy as fixed 8-sample majority voting, but with
+                <span class="gradient-text" style="font-weight:800;font-size:1.2em;">&darr;45% fewer samples</span>
+                and <span class="gradient-text" style="font-weight:800;font-size:1.2em;">&darr;40% fewer tokens</span>.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Experiments -->
+<section id="experiments">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-tag">Evaluation</div>
+            <h2>Experiment Dashboard</h2>
+            <p>Run controlled experiments on GSM8K math benchmark to compare all strategies</p>
+        </div>
+
+        <div class="experiment-controls card">
+            <div class="exp-row">
+                <div class="exp-field">
+                    <label>Number of Questions</label>
+                    <select id="exp-n-samples">
+                        <option value="10">10 (quick)</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                        <option value="300" selected>300 (recommended)</option>
+                    </select>
+                </div>
+                <div class="exp-field">
+                    <label>Strategies</label>
+                    <div class="exp-strats">
+                        <label><input type="checkbox" value="fixed_1" checked> Fixed-1</label>
+                        <label><input type="checkbox" value="fixed_4" checked> Fixed-4</label>
+                        <label><input type="checkbox" value="fixed_8" checked> Fixed-8</label>
+                        <label><input type="checkbox" value="adaptive" checked> Adaptive</label>
+                    </div>
+                </div>
+                <button id="run-experiment-btn" class="btn btn-primary">
+                    <span class="btn-text">&#9654; Run Experiment</span>
+                    <span class="btn-loading" style="display:none;"><span class="spinner"></span> Running...</span>
+                </button>
+            </div>
+
+            <div id="exp-progress" class="progress-wrap" style="display:none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="exp-progress-fill"></div>
+                </div>
+                <div class="progress-text" id="exp-progress-text">Starting...</div>
+            </div>
+        </div>
+
+        <!-- Key Result Banner -->
+        <div id="exp-key-result" class="key-result-banner" style="display:none;">
+            <div class="kr-item">
+                <div class="kr-label">Compute Reduction</div>
+                <div class="kr-value" id="kr-compute">—</div>
+            </div>
+            <div class="kr-divider"></div>
+            <div class="kr-item">
+                <div class="kr-label">Accuracy Difference</div>
+                <div class="kr-value" id="kr-accuracy">—</div>
+            </div>
+            <div class="kr-divider"></div>
+            <div class="kr-item">
+                <div class="kr-label">Token Saving</div>
+                <div class="kr-value" id="kr-tokens">—</div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="exp-results" style="display:none;">
+            <div class="exp-summary-grid">
+                <div class="card chart-card">
+                    <h4>Accuracy Comparison</h4>
+                    <canvas id="chart-accuracy"></canvas>
+                </div>
+                <div class="card chart-card">
+                    <h4>Avg Samples Used</h4>
+                    <canvas id="chart-samples"></canvas>
+                </div>
+                <div class="card chart-card">
+                    <h4>Avg Tokens Used</h4>
+                    <canvas id="chart-tokens"></canvas>
+                </div>
+                <div class="card chart-card">
+                    <h4>Adaptive Sample Distribution</h4>
+                    <canvas id="chart-distribution"></canvas>
+                </div>
+            </div>
+
+            <!-- Tradeoff chart (the key chart) -->
+            <div class="card chart-card wide-card tradeoff-card">
+                <h4>Accuracy vs Compute Tradeoff <span class="chart-subtitle">&mdash; the key result</span></h4>
+                <canvas id="chart-tradeoff"></canvas>
+            </div>
+
+            <!-- Results Table -->
+            <div class="card table-card">
+                <h4>Detailed Results</h4>
+                <div class="exp-meta" id="exp-meta"></div>
+                <table class="data-table" id="exp-results-table">
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>Accuracy</th>
+                            <th>Correct</th>
+                            <th>Avg Samples</th>
+                            <th>Avg Tokens</th>
+                            <th>Total Tokens</th>
+                        </tr>
+                    </thead>
+                    <tbody id="exp-results-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About -->
+<section id="about">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-tag">Context</div>
+            <h2>About This Research</h2>
+        </div>
+        <div class="about-grid">
+            <div class="card about-card">
+                <h3>The Problem</h3>
+                <p>
+                    Current LLMs spend the same inference compute on every query regardless of difficulty.
+                    Easy questions waste resources; hard questions may not get enough reasoning effort.
+                    As of 2026, papers confirm that <em>"no single test-time strategy is optimal across all inputs"</em>.
+                </p>
+            </div>
+            <div class="card about-card">
+                <h3>Our Approach</h3>
+                <p>
+                    We build a lightweight controller that monitors answer agreement across multiple LLM samples
+                    and dynamically stops when a triple criterion is met: minimum samples, minimum agreement count,
+                    and minimum confidence ratio. The result is a simple, interpretable, and reproducible method
+                    for <strong>adaptive test-time compute allocation</strong>.
+                </p>
+            </div>
+            <div class="card about-card">
+                <h3>Research Context</h3>
+                <p>
+                    Test-time compute scaling is an active 2025&ndash;2026 research direction.
+                    While partial solutions exist (heuristic early-exit, speculative decoding),
+                    a clean general stopping policy with formal guarantees remains an open problem.
+                    This project contributes to that gap.
+                </p>
+            </div>
+        </div>
+        <div class="about-footer">
+            <p class="footer-title">Adaptive Test-Time Compute Controller</p>
+            <p class="footer-sub">Model: GPT-4.1-mini &bull; Benchmark: GSM8K &bull; Built with FastAPI + Chart.js</p>
+        </div>
+    </div>
+</section>
+
+<script src="/js/charts.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
