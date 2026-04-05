@@ -2,6 +2,12 @@
 
 A per-instance compute allocation controller for LLM reasoning that dynamically decides how many inference samples to generate based on answer agreement — achieving equivalent accuracy to fixed-budget strategies while using significantly fewer samples and tokens.
 
+## Paper
+
+The project paper is included here:
+
+- [Adaptive TTC Paper](paper/adaptive_ttc_paper.pdf)
+
 ## Key Result
 
 Evaluated on **300 GSM8K questions** using GPT-4.1-mini:
