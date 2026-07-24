@@ -176,6 +176,13 @@ for strategy, metrics in data["summary"].items():
     print(f"{strategy}: {metrics['accuracy_pct']}% accuracy, {metrics['avg_samples']} avg samples")
 ```
 
+Or use the ready-made script (no API key required) — it prints the summary
+table and the adaptive stop-point distribution for the latest result file:
+
+```bash
+python examples/inspect_results.py
+```
+
 ## Evaluation
 
 - **Benchmark:** GSM8K (Grade School Math 8K) test set

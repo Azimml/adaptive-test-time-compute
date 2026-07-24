@@ -9,10 +9,10 @@ install:  ## Install runtime + dev dependencies
 	pip install -e ".[dev]"
 
 lint:  ## Run ruff linter
-	ruff check backend tests
+	ruff check backend tests examples
 
 fmt:  ## Auto-fix lint issues where possible
-	ruff check --fix backend tests
+	ruff check --fix backend tests examples
 
 test:  ## Run the test suite
 	pytest
