@@ -1,5 +1,9 @@
 # Adaptive Test-Time Compute Controller (ATTCC)
 
+[![CI](https://github.com/Azimml/adaptive-test-time-compute/actions/workflows/ci.yml/badge.svg)](https://github.com/Azimml/adaptive-test-time-compute/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 A per-instance compute allocation controller for LLM reasoning that dynamically decides how many inference samples to generate based on answer agreement — achieving equivalent accuracy to fixed-budget strategies while using significantly fewer samples and tokens.
 
 ## Paper
