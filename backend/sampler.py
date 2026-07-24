@@ -1,8 +1,20 @@
 import asyncio
-from openai import AsyncOpenAI
-from backend.config import OPENAI_API_KEY, MODEL, TEMPERATURE, MAX_TOKENS
+from functools import lru_cache
 
-client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+from openai import AsyncOpenAI
+
+from backend.config import MAX_TOKENS, MODEL, OPENAI_API_KEY, TEMPERATURE
+
+
+@lru_cache(maxsize=1)
+def get_client() -> AsyncOpenAI:
+    """Lazily construct the OpenAI client.
+
+    Deferring construction means the module (and everything that imports it,
+    e.g. the controller) can be imported and unit-tested without an API key
+    present; the key is only required once a real request is made.
+    """
+    return AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 SYSTEM_PROMPT = (
     "You are a precise math problem solver. Solve the problem step by step, "
@@ -14,7 +26,7 @@ SYSTEM_PROMPT = (
 
 async def generate_sample(question: str) -> dict:
     try:
-        response = await client.chat.completions.create(
+        response = await get_client().chat.completions.create(
             model=MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},

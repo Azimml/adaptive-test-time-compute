@@ -1,16 +1,17 @@
 import time
-from backend.sampler import generate_samples
-from backend.evaluator import extract_answer, compute_agreement
+
 from backend.config import (
-    MIN_SAMPLES,
-    MAX_SAMPLES,
-    STEP_SIZE,
     CONFIDENCE_THRESHOLD,
+    MAX_SAMPLES,
     MIN_AGREEMENT_COUNT,
+    MIN_SAMPLES,
+    STEP_SIZE,
 )
+from backend.evaluator import compute_agreement, extract_answer
+from backend.sampler import generate_samples
 
 
-async def adaptive_solve(question: str, config: dict = None, callback=None) -> dict:
+async def adaptive_solve(question: str, config: dict | None = None, callback=None) -> dict:
     """
     Adaptive test-time compute controller.
 

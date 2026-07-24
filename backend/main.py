@@ -1,15 +1,14 @@
 import asyncio
-import json
 import os
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from backend.controller import adaptive_solve, fixed_solve
-from backend.dataset import get_presets, load_gsm8k
+from backend.dataset import get_presets
 from backend.evaluator import check_correct
 from backend.experiment import run_experiment
 
@@ -29,8 +28,8 @@ app.add_middleware(
 class SolveRequest(BaseModel):
     question: str
     strategy: str = "adaptive"
-    config: dict = None
-    ground_truth: str = None
+    config: dict | None = None
+    ground_truth: str | None = None
 
 
 class ExperimentRequest(BaseModel):
@@ -76,7 +75,7 @@ async def api_compare(req: SolveRequest):
     solved = await asyncio.gather(*tasks)
 
     results = {}
-    for s, r in zip(strategies, solved):
+    for s, r in zip(strategies, solved, strict=True):
         if req.ground_truth:
             r["correct"] = check_correct(r["answer"], req.ground_truth)
             r["ground_truth"] = req.ground_truth
