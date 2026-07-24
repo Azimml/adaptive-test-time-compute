@@ -97,7 +97,11 @@ pip install -r requirements.txt
 
 ### Configuration
 
-Create a `.env` file in the project root:
+Copy the provided template and fill in your key:
+
+```bash
+cp .env.example .env
+```
 
 ```
 OPENAI_API_KEY=your_openai_api_key_here
