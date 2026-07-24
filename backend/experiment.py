@@ -1,10 +1,10 @@
-import asyncio
 import json
 import os
 import time
+
 from backend.controller import adaptive_solve, fixed_solve
-from backend.evaluator import check_correct
 from backend.dataset import load_gsm8k
+from backend.evaluator import check_correct
 
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results")
 
