@@ -1,0 +1,19 @@
+# Normalize line endings to LF on checkin.
+* text=auto eol=lf
+
+# Explicit source types.
+*.py    text
+*.js    text
+*.css   text
+*.html  text
+*.json  text
+*.md    text
+*.yml   text
+*.yaml  text
+
+# Binary assets — never diff or convert.
+*.pdf   binary
+
+# Large generated result files: collapse in PR diffs.
+results/*.json      linguist-generated=true
+frontend/data_latest.json  linguist-generated=true
