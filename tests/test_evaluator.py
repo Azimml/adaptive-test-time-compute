@@ -98,6 +98,16 @@ class TestComputeAgreement:
         assert a["confidence"] == 0.0
         assert a["total_valid"] == 0
 
+    def test_distribution_reports_every_answer(self):
+        a = compute_agreement(["5", "5", "7"])
+        assert a["distribution"] == {"5": 2, "7": 1}
+        assert a["total_valid"] == 3
+
+    def test_empty_input(self):
+        a = compute_agreement([])
+        assert a["majority_answer"] is None
+        assert a["total"] == 0
+
 
 class TestCheckCorrect:
     def test_exact_and_normalized_match(self):
