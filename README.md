@@ -140,6 +140,22 @@ The web interface provides:
 - **Strategy comparison** — run all 4 strategies on the same question side-by-side
 - **Experiment dashboard** — run batch experiments with live progress and result charts
 
+### HTTP / WebSocket API
+
+The server (`backend/main.py`) exposes:
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET`  | `/api/presets` | Built-in preset questions with ground truth. |
+| `POST` | `/api/solve` | Solve one question with a chosen strategy. |
+| `POST` | `/api/compare` | Solve one question with all four strategies. |
+| `WS`   | `/ws/solve` | Stream each sampling round as it completes. |
+| `WS`   | `/ws/experiment` | Stream batch-experiment progress, then results. |
+
+`/api/solve` and `/api/compare` accept `{ "question", "strategy", "config", "ground_truth" }`.
+An unknown or malformed `strategy` (e.g. `fixed_abc`) returns HTTP 400 with an
+`{"error": ...}` body rather than a 500.
+
 ### Use the adaptive controller directly
 
 ```python
@@ -162,6 +178,22 @@ async def main():
 
 asyncio.run(main())
 ```
+
+### Configuration reference
+
+Every field of the `config` dict is optional and falls back to the default in
+`backend/config.py`:
+
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `min_samples` | 4 | Never stop before this many samples exist. |
+| `max_samples` | 8 | Hard budget cap; the controller stops here regardless. |
+| `step_size` | 2 | Samples added per round. Must be ≥ 1 and ≤ `max_samples`. |
+| `confidence_threshold` | 0.7 | Majority ratio required to stop early. |
+| `min_agreement_count` | 3 | Minimum times the majority answer must appear. |
+
+An invalid `step_size` (< 1) or a `max_samples` below `step_size` raises a
+`ValueError` before any samples are generated.
 
 ## Pre-computed Results
 
