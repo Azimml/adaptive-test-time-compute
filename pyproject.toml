@@ -11,9 +11,12 @@ authors = [{ name = "Azimbek Olimbekov" }]
 dev = ["pytest>=7.4", "pytest-asyncio>=0.23", "ruff>=0.4"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+# `evaluator.py` is dependency-free and carries doctest examples, so it is
+# collected for doctests directly; the rest of `backend/` pulls in fastapi /
+# openai and is exercised through the mocked tests in `tests/`.
+testpaths = ["tests", "backend/evaluator.py"]
 asyncio_mode = "auto"
-addopts = "-ra -q"
+addopts = "-ra -q --doctest-modules"
 
 [tool.ruff]
 line-length = 100
