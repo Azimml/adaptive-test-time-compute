@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from backend.controller import adaptive_solve, fixed_solve
+from backend.controller import solve
 from backend.dataset import get_presets
 from backend.evaluator import check_correct
 from backend.experiment import run_experiment
@@ -44,13 +44,10 @@ async def api_presets():
 
 @app.post("/api/solve")
 async def api_solve(req: SolveRequest):
-    if req.strategy == "adaptive":
-        result = await adaptive_solve(req.question, req.config)
-    elif req.strategy.startswith("fixed_"):
-        n = int(req.strategy.split("_")[1])
-        result = await fixed_solve(req.question, n=n)
-    else:
-        return JSONResponse({"error": "Invalid strategy"}, status_code=400)
+    try:
+        result = await solve(req.question, req.strategy, req.config)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
 
     if req.ground_truth:
         result["correct"] = check_correct(result["answer"], req.ground_truth)
@@ -64,14 +61,7 @@ async def api_compare(req: SolveRequest):
     """Run all strategies on same question for side-by-side comparison."""
     strategies = ["fixed_1", "fixed_4", "fixed_8", "adaptive"]
 
-    tasks = []
-    for s in strategies:
-        if s == "adaptive":
-            tasks.append(adaptive_solve(req.question, req.config))
-        else:
-            n = int(s.split("_")[1])
-            tasks.append(fixed_solve(req.question, n=n))
-
+    tasks = [solve(req.question, s, req.config) for s in strategies]
     solved = await asyncio.gather(*tasks)
 
     results = {}
@@ -115,13 +105,10 @@ async def ws_solve(websocket: WebSocket):
 
             await websocket.send_json({"type": "start", "strategy": strategy})
 
-            if strategy == "adaptive":
-                result = await adaptive_solve(question, config, callback=send_round)
-            elif strategy.startswith("fixed_"):
-                n = int(strategy.split("_")[1])
-                result = await fixed_solve(question, n=n, callback=send_round)
-            else:
-                await websocket.send_json({"type": "error", "message": "Invalid strategy"})
+            try:
+                result = await solve(question, strategy, config, callback=send_round)
+            except ValueError as e:
+                await websocket.send_json({"type": "error", "message": str(e)})
                 continue
 
             if ground_truth:

@@ -183,3 +183,31 @@ async def fixed_solve(question: str, n: int = 1, callback=None) -> dict:
         "rounds": [round_info],
         "config": {"n": n},
     }
+
+
+def parse_fixed_n(strategy: str) -> int:
+    """Parse the sample count out of a ``"fixed_<n>"`` strategy string.
+
+    Raises :class:`ValueError` with a clear message when the suffix is missing
+    or not a positive integer (e.g. ``"fixed_"`` or ``"fixed_abc"``), so callers
+    can turn it into a 400 instead of leaking an ``IndexError``/``ValueError``.
+    """
+    _, _, suffix = strategy.partition("_")
+    if not suffix.isdigit() or int(suffix) < 1:
+        raise ValueError(
+            f"invalid fixed strategy {strategy!r}: expected 'fixed_<positive int>'"
+        )
+    return int(suffix)
+
+
+async def solve(question: str, strategy: str, config: dict | None = None, callback=None) -> dict:
+    """Dispatch to the right solver for ``strategy``.
+
+    ``"adaptive"`` runs the adaptive controller; ``"fixed_<n>"`` runs the
+    fixed-N baseline. Any other value raises :class:`ValueError`.
+    """
+    if strategy == "adaptive":
+        return await adaptive_solve(question, config, callback=callback)
+    if strategy.startswith("fixed_"):
+        return await fixed_solve(question, n=parse_fixed_n(strategy), callback=callback)
+    raise ValueError(f"unknown strategy {strategy!r}")

@@ -2,7 +2,7 @@ import json
 import os
 import time
 
-from backend.controller import adaptive_solve, fixed_solve
+from backend.controller import solve
 from backend.dataset import load_gsm8k
 from backend.evaluator import check_correct
 
@@ -55,12 +55,9 @@ async def run_experiment(
                 )
 
             try:
-                if strategy == "adaptive":
-                    result = await adaptive_solve(q["question"])
-                elif strategy.startswith("fixed_"):
-                    n = int(strategy.split("_")[1])
-                    result = await fixed_solve(q["question"], n=n)
-                else:
+                try:
+                    result = await solve(q["question"], strategy)
+                except ValueError:
                     continue
 
                 correct = check_correct(result["answer"], q["answer"])
