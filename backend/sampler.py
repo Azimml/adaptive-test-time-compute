@@ -1,3 +1,10 @@
+"""OpenAI-backed sample generation.
+
+The controller asks this module for `n` independent reasoning samples per
+round. Each sample is a self-contained dict (`reasoning`, `input_tokens`,
+`output_tokens`); token usage is threaded back so the controller can report
+the compute cost of a stopping decision.
+"""
 import asyncio
 from functools import lru_cache
 
@@ -25,6 +32,13 @@ SYSTEM_PROMPT = (
 
 
 async def generate_sample(question: str) -> dict:
+    """Generate one reasoning sample for ``question``.
+
+    Returns ``{"reasoning", "input_tokens", "output_tokens"}``. API failures are
+    caught and returned as a sample whose reasoning is an ``[API Error: ...]``
+    marker with zero token usage, so a single failed request never aborts a
+    whole round; the failed sample simply yields no extractable answer.
+    """
     try:
         response = await get_client().chat.completions.create(
             model=MODEL,
@@ -53,5 +67,10 @@ async def generate_sample(question: str) -> dict:
 
 
 async def generate_samples(question: str, n: int) -> list[dict]:
+    """Generate ``n`` samples concurrently and return them as a list.
+
+    The requests are issued in parallel via ``asyncio.gather``, so a round of
+    ``n`` samples costs roughly one request of latency rather than ``n``.
+    """
     tasks = [generate_sample(question) for _ in range(n)]
     return await asyncio.gather(*tasks)
