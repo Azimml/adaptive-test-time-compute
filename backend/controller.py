@@ -31,6 +31,13 @@ async def adaptive_solve(question: str, config: dict | None = None, callback=Non
     if config:
         cfg.update(config)
 
+    if cfg["step_size"] < 1:
+        raise ValueError(f"step_size must be >= 1, got {cfg['step_size']}")
+    if cfg["max_samples"] < cfg["step_size"]:
+        raise ValueError(
+            f"max_samples ({cfg['max_samples']}) must be >= step_size ({cfg['step_size']})"
+        )
+
     all_samples = []
     rounds = []
     total_input_tokens = 0

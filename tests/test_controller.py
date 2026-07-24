@@ -97,6 +97,22 @@ async def test_config_override_changes_budget(patch_samples):
 
 
 @pytest.mark.asyncio
+async def test_invalid_step_size_raises_valueerror(patch_samples):
+    # step_size < 1 used to raise an opaque ZeroDivisionError; it now raises a
+    # clear ValueError before any sampling happens.
+    patch_samples(["1"] * 8)
+    with pytest.raises(ValueError, match="step_size"):
+        await controller.adaptive_solve("q", config={"step_size": 0})
+
+
+@pytest.mark.asyncio
+async def test_max_samples_below_step_size_raises(patch_samples):
+    patch_samples(["1"] * 8)
+    with pytest.raises(ValueError, match="max_samples"):
+        await controller.adaptive_solve("q", config={"max_samples": 1, "step_size": 2})
+
+
+@pytest.mark.asyncio
 async def test_token_accounting_sums_over_all_samples(patch_samples):
     patch_samples(["42"] * 8)
     result = await controller.adaptive_solve("q")
