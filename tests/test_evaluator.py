@@ -65,6 +65,13 @@ class TestExtractAnswer:
     def test_no_number_present(self):
         assert extract_answer("I am not sure.") is None
 
+    def test_leading_decimal_is_not_truncated(self):
+        # Regression: a bare fraction like ".5" must not lose its leading zero
+        # and become "5". Normalization renders it as "0.5".
+        assert extract_answer("The answer is .5") == "0.5"
+        assert extract_answer("The answer is -.25") == "-0.25"
+        assert extract_answer("#### .75") == "0.75"
+
 
 class TestComputeAgreement:
     def test_unanimous(self):

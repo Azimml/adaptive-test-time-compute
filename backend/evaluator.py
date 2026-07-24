@@ -1,6 +1,11 @@
 import re
 from collections import Counter
 
+# A signed number with optional thousands separators. Accepts both a digit-led
+# form ("42", "1,234", "3.5", "100.") and a leading-decimal form (".5", "-.25")
+# so answers written as bare fractions are not truncated to their digits.
+_NUMBER = r"-?(?:\d[\d,]*\.?\d*|\.\d+)"
+
 
 def normalize_number(s: str) -> str:
     """Canonicalize a numeric string for equality comparison.
@@ -40,23 +45,23 @@ def extract_answer(text: str) -> str | None:
 
     # "The answer is X"
     match = re.search(
-        r"[Tt]he\s+answer\s+is[:\s]*\$?\\?(?:boxed\{)?(-?\d[\d,]*\.?\d*)\}?", text
+        rf"[Tt]he\s+answer\s+is[:\s]*\$?\\?(?:boxed\{{)?({_NUMBER})\}}?", text
     )
     if match:
         return normalize_number(match.group(1))
 
     # "#### X" (GSM8K format)
-    match = re.search(r"####\s*(-?\d[\d,]*\.?\d*)", text)
+    match = re.search(rf"####\s*({_NUMBER})", text)
     if match:
         return normalize_number(match.group(1))
 
     # "= X" at end of line
-    match = re.search(r"=\s*\$?(-?\d[\d,]*\.?\d*)\s*$", text, re.MULTILINE)
+    match = re.search(rf"=\s*\$?({_NUMBER})\s*$", text, re.MULTILINE)
     if match:
         return normalize_number(match.group(1))
 
     # Last number in text
-    numbers = re.findall(r"-?\d[\d,]*\.?\d*", text)
+    numbers = re.findall(_NUMBER, text)
     if numbers:
         return normalize_number(numbers[-1])
 
