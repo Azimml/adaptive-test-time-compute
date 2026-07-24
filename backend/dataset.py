@@ -79,8 +79,13 @@ PRESET_QUESTIONS = [
 ]
 
 
-async def load_gsm8k(n_samples: int = None) -> list[dict]:
-    """Load GSM8K test set from HuggingFace."""
+async def load_gsm8k(n_samples: int | None = None) -> list[dict]:
+    """Load GSM8K test set from HuggingFace.
+
+    When ``n_samples`` is given, only the first that many test questions are
+    returned. If the dataset can't be loaded (offline, missing ``datasets``
+    package), falls back to the built-in :data:`PRESET_QUESTIONS`.
+    """
     try:
         from datasets import load_dataset
 

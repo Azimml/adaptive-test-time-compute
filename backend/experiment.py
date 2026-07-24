@@ -11,7 +11,7 @@ RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results"
 
 async def run_experiment(
     n_samples: int = 30,
-    strategies: list[str] = None,
+    strategies: list[str] | None = None,
     callback=None,
 ) -> dict:
     """
