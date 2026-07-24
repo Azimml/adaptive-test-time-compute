@@ -28,7 +28,8 @@ jobs:
           python -m pip install --upgrade pip
           # Runtime deps needed to import the backend + test/lint tooling.
           pip install openai python-dotenv
-          pip install pytest pytest-asyncio ruff
+          # Pin ruff so local and CI agree on lint rules across versions.
+          pip install pytest pytest-asyncio "ruff==0.16.0"
 
       - name: Lint (ruff)
         run: ruff check backend tests
