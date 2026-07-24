@@ -19,9 +19,9 @@ Evaluated on **300 GSM8K questions** using GPT-4.1-mini:
 | Fixed-8 (baseline) | 96.7% | 8.0 | 832,446 |
 | **Adaptive (ours)** | **96.3%** | **4.2** | **448,074** |
 
-**↓47% fewer samples and ↓46% fewer tokens at equivalent accuracy.**
+**↓47% fewer samples and ↓46% fewer tokens vs Fixed-8, at statistically indistinguishable accuracy** (96.3% vs 96.7%, a 0.4-point gap over 300 questions — well within sampling noise). Against Fixed-4 the adaptive policy is *more* accurate (96.3% vs 95.0%) for a comparable token budget.
 
-95% of questions stopped at 4 samples (easy/medium); only 5% required the full 8-sample budget (hard questions).
+Because the step size is 2 and the confidence gate needs a ≥0.7 majority, the controller stops at either **4 or 8** samples in practice — 285/300 questions (95%) resolved at 4, and 15/300 (5%) ran the full 8. (A 6-sample stop is possible in principle but rare: 4/6 ≈ 0.67 fails the 0.7 gate, so 6 only stops on a 5/6 split, which didn't occur in this run.)
 
 ## Problem
 
@@ -42,10 +42,12 @@ We propose a consensus-based adaptive sampling controller with a **triple stoppi
 This prevents the naive "2 samples agree → stop" failure mode where models confidently agree on wrong answers.
 
 ```
-Easy question   → samples agree at round 2 → STOP at 4 samples
-Medium question → partial agreement        → STOP at 4-6 samples
-Hard question   → persistent disagreement  → runs full 8 samples
+Easy question   → samples agree at round 2      → STOP at 4 samples
+Medium question → majority forms but stays <0.7  → keeps sampling
+Hard question   → persistent disagreement        → runs full 8 samples
 ```
+
+With the default step size of 2, the reachable stop points are 4, 6, or 8 samples; empirically (see below) questions resolve at 4 or run to 8, with 6-sample stops requiring a specific 5/6 split.
 
 ## Project Structure
 
